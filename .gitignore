@@ -1,3 +1,13 @@
+# this and that
+share/
+lib/
+lib64/
+lib64
+bin/
+*.swp
+pip*.json
+*.cfg
+
 # Custom
 *.idea
 *.png
