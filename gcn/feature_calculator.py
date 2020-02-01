@@ -17,12 +17,12 @@ from geotext import GeoText
 from bpemb import BPEmb
 import numpy as np
 
-# load English BPEmb model with default vocabulary size (10k) and 50-dimensional embeddings
-bpemb_en = BPEmb(lang="en", dim=100)
+# globals
 # ---------------------------------------------------------------------------------------------------
 UNDEFINED="undefined"
 WordArea = namedtuple('WordArea', 'left, top, right, bottom, content, idx')
-
+# load English BPEmb model with default vocabulary size (10k) and 50-dimensional embeddings
+bpemb_en = BPEmb(lang="en", dim=100)
 # ---------------------------------------------------------------------------------------------------
 
 from data_access import *
@@ -160,9 +160,11 @@ def get_word_area_numeric_features(word_area, graph):
     return [rd_left, rd_right, rd_top, rd_bottom]
 
 
-### Run Feature Computation Process
+### Run Feature Calculator Process
 # -------------------------------------------------------------------------
-def feature_computation(normalized_dir, target_dir):
+def run_feature_calculator(normalized_dir, target_dir):
+    print("Running feature calculator")
+        
     image_filepaths, word_filepaths, _ = get_normalized_filepaths(normalized_dir)
     
     for image_filepath, word_filepath in zip(image_filepaths, word_filepaths):
@@ -184,46 +186,21 @@ def feature_computation(normalized_dir, target_dir):
         save_features(target_dir, image_filepath, word_embeddings, word_binary_features, word_numeric_features)
         save_graph(target_dir, image_filepath, graph, adj_matrix)
 
-
-
 # -------------------------------------------------------------------------
-# unit tests
+# Run the process in batch mode
 # -------------------------------------------------------------------------
-def unit_test():
+def main():
 
-    # configs for normalized data
+    # configs for data storage
     PROJECT_ROOT_PREFIX = "/home/adrian/as/blogs/nanonets"
-    
+
     NORMALIZED_PREFIX = "invoice-ie-with-gcn/data/normalized/"
     normalized_dir = os.path.join(PROJECT_ROOT_PREFIX, NORMALIZED_PREFIX)
-    
-    OUTPUT_PREFIX = "invoice-ie-with-gcn/data/"
-    output_dir = os.path.join(PROJECT_ROOT_PREFIX, OUTPUT_PREFIX)
 
-     # find files
-    image_files, word_files, entity_files = get_normalized_filepaths(normalized_dir)
-    # load one raw example
-    image, word_areas, entities = load_normalized_example(image_files[0], word_files[0], entity_files[0])
+    FEATURES_PREFIX = "invoice-ie-with-gcn/data/"
+    features_dir = os.path.join(PROJECT_ROOT_PREFIX, FEATURES_PREFIX)
 
-       
-    
-    #test  1
-    word_embeddings = [get_word_bpe(wa.content, bpemb_en) for wa in word_areas]
-    print(len(word_embeddings[0]))
+    run_feature_calculator(normalized_dir, features_dir)
 
-    #test  2
-    binary_features = [get_word_binary_features(wa.content) for wa in word_areas]
-    print(binary_features)
-
-    #test 3
-    
-    # greate graph for numeric features
-    lines = line_formation(word_areas)
-    image_width, image_height = cv_size(image)
-    graph = graph_modeling(lines, word_areas, image_width, image_height)    
-
-    numeric_features = [get_word_area_numeric_features(wa, graph) for wa in word_areas]
-    print(numeric_features)
-    
 if __name__ == "__main__":
-    unit_test()
+    main()

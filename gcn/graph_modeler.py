@@ -11,7 +11,7 @@ from data_access import *
 from visuals import *
 
 # ------------------------------------------------------------------------------------------
-# declarations
+# global declarations
 UNDEFINED="undefined"
 WordArea = namedtuple('WordArea', 'left, top, right, bottom, content, idx')
 cv_size = lambda img: tuple(img.shape[1::-1])
@@ -195,47 +195,42 @@ def form_adjacency_matrix(graph):
 
 
 # -------------------------------------------------------------------------
-# unit tests
+### Run graph modeling process
 # -------------------------------------------------------------------------
-def unit_test():
-    # configs for normalized data
+def run_graph_modeler(normalized_dir, target_dir):
+    print("Running graph modeler")
+        
+    image_filepaths, word_filepaths, _ = get_normalized_filepaths(normalized_dir)
+    
+    for image_filepath, word_filepath in zip(image_filepaths, word_filepaths):
+        # read normalized data for one image
+        image, word_areas, _ = load_normalized_example(image_filepath, word_filepath)
+
+        # compute graph adj matrix for one image
+        lines = line_formation(word_areas)
+        image_width, image_height = cv_size(image)
+        graph = graph_modeling(lines, word_areas, image_width, image_height)
+        adj_matrix = form_adjacency_matrix(graph)
+
+        # save node features and graph
+        save_graph(target_dir, image_filepath, graph, adj_matrix)
+    
+
+# -------------------------------------------------------------------------
+# Run the process in batch mode
+# -------------------------------------------------------------------------
+def main():
+
+    # configs for data storage
     PROJECT_ROOT_PREFIX = "/home/adrian/as/blogs/nanonets"
+
     NORMALIZED_PREFIX = "invoice-ie-with-gcn/data/normalized/"
     normalized_dir = os.path.join(PROJECT_ROOT_PREFIX, NORMALIZED_PREFIX)
 
-     # find files
-    image_files, word_files, entity_files = get_normalized_filepaths(normalized_dir)
-    # load one raw example
-    image, word_areas, entities = load_normalized_example(image_files[0], word_files[0], entity_files[0])
+    FEATURES_PREFIX = "invoice-ie-with-gcn/data/"
+    features_dir = os.path.join(PROJECT_ROOT_PREFIX, FEATURES_PREFIX)
 
-    #test algo 1
-    lines = line_formation(word_areas)
-    
-    # show lines
-    for line in lines:
-        print('\n')
-        for tup in line:
-            print(tup)
-    
-    # test algo 2
-    image_width, image_height = cv_size(image)
-    graph = graph_modeling(lines, word_areas, image_width, image_height)
-    
-    # plot image with annotations
-    plot_image(image, word_areas, entities, graph, False)    
-    print("Visualize Graph Data")
-    print("writing {}".format("graph_example.png"))
-    plt.savefig('graph_example.png')
-    
-    # adj matrix
-    adjacency_matrix = form_adjacency_matrix(graph)
-    print(adjacency_matrix.shape)
-    print(np.sum(adjacency_matrix, axis=0))
-    print(np.sum(adjacency_matrix, axis=1))
-    print(np.sum(adjacency_matrix, axis=0) == np.sum(adjacency_matrix, axis=1))
-
-    print(adjacency_matrix)
-    
+    run_graph_modeler(normalized_dir, features_dir)
 
 if __name__ == "__main__":
-    unit_test()
+    main()

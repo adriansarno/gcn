@@ -6,6 +6,7 @@ import json
 from collections import namedtuple
 import csv
 import cv2
+import numpy as np
 
 # ---------------------------------------------------------------------------------------------------
 UNDEFINED="undefined"
@@ -115,8 +116,46 @@ def save_graph(target_dir, image_filepath, graph=[], adj_matrix=None):
 
     # save adj matrix
     adj_filename = "{}.csv".format(image_filename)
-    adj_filepath = create_filepath(target_dir, "graph_matrix", adj_filename)
+    adj_filepath = create_filepath(target_dir, "graph_adj_matrix", adj_filename)
     with open(adj_filepath, 'w') as f:
         for i in range(len(adj_matrix)):
             f.write(",".join(["{}".format(x) for x in adj_matrix[i,:]]) + "\n")
+   
+# ------------------------------------------------------------------------------------------------
+def get_feature_filepaths(directory):
+    # return full file paths
+    
+    feature_files = get_filepaths(directory, "features", ".csv")    
+    graph_files = get_filepaths(directory, "graph", ".csv")
+    adj_matrix_files = get_filepaths(directory, "graph_adj_matrix", ".csv")
+    
+    return feature_files, graph_files, adj_matrix_files
+
+def read_features(features_filepath, adj_matrix_filepath):
+    """
+    Reads the features file and the graph_adj_matrix file for one image.
+    Returns numpy arrays.
+    
+    Contents:
+    There is a feature vector for each word_area of the image, this vector is
+    a concatenation of binary, numerical and text features.
+    The binary features contain information aabout the relative distance 
+    to neighbour nodes.
+    The graph adjacency matrix contains the connectivity structure of the
+    graph.
+    All the graph information is already available between the numeric 
+    features and the adjacency matrix, so we don't need to read the graph file
+    (the graph is stored as json file, separately under a 'graph' directory.)
+    
+    File format:
+    both features and adj. matrix are stored in csv files.
+    """
+    # read features
+    features = np.genfromtxt(features_filepath, delimiter=',', dtype=float) 
+    
+    # read adj matrix
+    adj_matrix = np.genfromtxt(adj_matrix_filepath, delimiter=',', dtype=float) 
+        
+    return features, adj_matrix
+
    
