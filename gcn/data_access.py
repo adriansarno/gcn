@@ -129,7 +129,11 @@ def get_feature_filepaths(directory):
     graph_files = get_filepaths(directory, "graph", ".csv")
     adj_matrix_files = get_filepaths(directory, "graph_adj_matrix", ".csv")
     
-    return feature_files, graph_files, adj_matrix_files
+    normalized_dir = os.path.join(directory, "normalized")
+    entity_files = get_filepaths(normalized_dir, "entities", ".csv")
+    
+    return feature_files, graph_files, adj_matrix_files, entity_files
+
 
 def read_features(features_filepath, adj_matrix_filepath):
     """

@@ -1,9 +1,12 @@
+import warnings
+warnings.filterwarnings(action="ignore", message="^.*deprecated.*$")
+
 from gcn.layers import *
 from gcn.metrics import *
 
-flags = tf.app.flags
-FLAGS = flags.FLAGS
-
+# flags = tf.app.flags
+# FLAGS = flags.FLAGS
+from training_parameters import FLAGS
 
 class Model(object):
     def __init__(self, **kwargs):
@@ -167,6 +170,66 @@ class GCN(Model):
                                             logging=self.logging))
 
         self.layers.append(GraphConvolution(input_dim=FLAGS.hidden1,
+                                            output_dim=self.output_dim,
+                                            placeholders=self.placeholders,
+                                            act=lambda x: x,
+                                            dropout=True,
+                                            logging=self.logging))
+
+    def predict(self):
+        return tf.nn.softmax(self.outputs)
+    
+# network with a variable number of hidden layers
+# -------------------------------------------------------------------------------------------------
+class GCNX(Model):
+    def __init__(self, placeholders, input_dim, **kwargs):
+        super(GCNX, self).__init__(**kwargs)
+
+        self.inputs = placeholders['features']
+        self.input_dim = input_dim
+        # self.input_dim = self.inputs.get_shape().as_list()[1]  # To be supported in future Tensorflow versions
+        self.output_dim = placeholders['labels'].get_shape().as_list()[1]
+        self.placeholders = placeholders
+
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
+
+        self.build()
+
+    def _loss(self):
+        # Weight decay loss
+        for var in self.layers[0].vars.values():
+            self.loss += FLAGS.weight_decay * tf.nn.l2_loss(var)
+
+        # Cross entropy error
+        self.loss += masked_softmax_cross_entropy(self.outputs, self.placeholders['labels'],
+                                                  self.placeholders['labels_mask'])
+
+    def _accuracy(self):
+        self.accuracy = masked_accuracy(self.outputs, self.placeholders['labels'],
+                                        self.placeholders['labels_mask'])
+
+    def _build(self):
+
+        self.layers.append(GraphConvolution(input_dim=self.input_dim,
+                                            output_dim=FLAGS.hidden1,
+                                            placeholders=self.placeholders,
+                                            act=tf.nn.relu,
+                                            dropout=True,
+                                            sparse_inputs=True,
+                                            logging=self.logging))
+        
+        for i in range(1, FLAGS.num_hidden_layers):
+            in_dim = FLAGS.hidden1 * 2**(i-1)
+            out_dim = in_dim * 2
+            print(in_dim, "layer", out_dim)
+            self.layers.append(GraphConvolution(input_dim=in_dim,
+                                                output_dim=out_dim,
+                                                placeholders=self.placeholders,
+                                                act=tf.nn.relu,
+                                                dropout=True,
+                                                logging=self.logging))
+
+        self.layers.append(GraphConvolution(input_dim=out_dim,
                                             output_dim=self.output_dim,
                                             placeholders=self.placeholders,
                                             act=lambda x: x,

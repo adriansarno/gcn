@@ -1,8 +1,12 @@
+import warnings
+warnings.filterwarnings(action="ignore", message="^.*deprecated.*$")
+
 from gcn.inits import *
 import tensorflow as tf
 
-flags = tf.app.flags
-FLAGS = flags.FLAGS
+# flags = tf.app.flags
+# FLAGS = flags.FLAGS
+from training_parameters import FLAGS
 
 # global unique layer ID dictionary for layer name assignment
 _LAYER_UIDS = {}
